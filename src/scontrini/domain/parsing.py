@@ -279,8 +279,13 @@ def parse_totals(text: str) -> Totals:
 def parse_items(text: str) -> list[Item]:
     """
     Estrae righe prodotto/servizio dalla sezione DESCRIZIONE -> ARTICOLI quando presente.
-    Supporta formato tipico: 'DESC 0,75 B' (prezzo + codice IVA).
-    Gestisce righe SCONTO come importi negativi e scarta falsi sconti (es. "su SCONTO 21,24").
+
+    Supporta due layout tipici:
+    - Layout A (es. IPERAL):  'DESC 0,75 B'  -> prezzo + codice IVA (A/B/C)
+    - Layout B (es. MD):     'DESC 4,00 0,99' -> IVA% + prezzo (due numeri)
+
+    Gestisce righe SCONTO come importi negativi e scarta falsi sconti tipo "su SCONTO 21,24".
+    Ripulisce il nome prodotto eliminando caratteri non plausibili (mantiene lettere/cifre/spazi/punti/virgole).
     """
     items: list[Item] = []
     lines = _lines(text)
@@ -290,18 +295,16 @@ def parse_items(text: str) -> list[Item]:
     if not item_lines:
         item_lines = lines
 
+    # Mappa A/B/C -> aliquota (se presente nel footer)
     vat_code_map = _parse_vat_code_map(text)
 
-    # Regex robusta:
-    # - desc + prezzo (0,75 / 9.69) + IVA code opzionale anche attaccata (1,39A)
-    # - permette trailing junk dopo (OCR sporco)
-    item_re = re.compile(
-        r"^(?P<desc>.+?)\s+(?P<price>-?\d+[\,\.]\d{2})\s*(?P<iva>[A-Z])?\b.*$"
-    )
+    # Numeri tipo 0,99 / 25.55 / 10,00
+    num_re = re.compile(r"\d+[\,\.]\d{2}")
+    iva_code_re = re.compile(r"\b([ABC])\b", re.I)
 
-    # Filtri anti-non-item
+    # Righe sicuramente NON-articolo
     non_item_re = re.compile(
-        r"\b(TOTALE|TOT|IMPORTO|PAGATO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO|IVA)\b",
+        r"\b(TOTALE|TOT|SUBTOT|SUBTOT\.?|IMPORTO|PAGATO|PAGAMENTO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO)\b",
         re.I,
     )
 
@@ -312,26 +315,59 @@ def parse_items(text: str) -> list[Item]:
         if not cl:
             continue
 
-        m = item_re.match(cl)
-        if not m:
+        # Scarta righe di totali/pagamenti ecc.
+        if non_item_re.search(cl):
             continue
 
-        desc = m.group("desc").strip()
-        price = _to_float_eur(m.group("price"))
-        iva_code = (m.group("iva") or "").upper() or None
-
-        if price is None or not desc or len(desc) < 3:
+        # Estrai tutti i numeri decimali presenti nella riga
+        nums = num_re.findall(cl)
+        if not nums:
             continue
 
-        # Scarta righe chiaramente non-articolo (prima della logica sconti)
-        if non_item_re.search(desc) and "SCONTO" not in desc.upper():
+        # Heuristica: descrizione = parte prima del primo numero
+        first_num_pos = None
+        m_first = num_re.search(cl)
+        if m_first:
+            first_num_pos = m_first.start()
+
+        desc = cl if first_num_pos is None else cl[:first_num_pos].strip()
+        if not desc or len(desc) < 3:
             continue
 
-        # Normalizza descrizione una sola volta
-        norm_desc = _normalize_desc(desc)
+        # Clean nome prodotto (whitelist)
+        desc_clean = clean_item_name(desc)
 
-        # Sconti: scarta falsi sconti tipo "su SCONTO 21,24" (fusione/rumore OCR)
-        # Regola: se contiene "SCONTO" ma NON contiene "%" e NON contiene "-" e l'importo è grande -> scarta
+        # Se dopo pulizia è troppo corto, scarta
+        if not desc_clean or len(desc_clean) < 3:
+            continue
+
+        # Prezzo e IVA rate
+        price: Optional[float] = None
+        vat_rate: Optional[float] = None
+
+        # Layout B: due numeri -> primo = IVA%, ultimo = prezzo
+        if len(nums) >= 2:
+            vat_rate = _to_float_eur(nums[0])
+            price = _to_float_eur(nums[-1])
+        else:
+            # Layout A: un numero -> prezzo (codice IVA eventuale)
+            price = _to_float_eur(nums[0])
+
+        if price is None:
+            continue
+
+        # Codice IVA A/B/C (layout A). Se presente e mappabile, valorizza vat_rate.
+        m_code = iva_code_re.search(cl)
+        if m_code:
+            code = m_code.group(1).upper()
+            mapped = vat_code_map.get(code)
+            if mapped is not None:
+                vat_rate = mapped
+
+        # Normalizza per logica sconti e dedup
+        norm_desc = _normalize_desc(desc_clean)
+
+        # Sconti: scarta falsi sconti tipo "su SCONTO 21,24"
         if "SCONTO" in norm_desc:
             has_minus = "-" in cl
             has_percent = "%" in cl
@@ -340,24 +376,16 @@ def parse_items(text: str) -> list[Item]:
             if (not has_minus) and price > 0:
                 price = -price
 
-        # IVA code solo A/B/C
-        if iva_code and iva_code not in ("A", "B", "C"):
-            iva_code = None
-        vat_rate = vat_code_map.get(iva_code) if iva_code else None
-
-        # Dedup soft (descrizione normalizzata + prezzo)
+        # Dedup soft: descrizione normalizzata + prezzo
         key = (norm_desc, round(float(price), 2))
         if key in seen:
             continue
         seen.add(key)
 
-        cleaned = clean_item_name(desc)
-        cleaned = strip_leading_singleton(cleaned)
-
         items.append(
             Item(
                 raw_line=raw,
-                name=cleaned,
+                name=desc_clean[:120],
                 total_price=price,
                 vat_rate=vat_rate,
             )
