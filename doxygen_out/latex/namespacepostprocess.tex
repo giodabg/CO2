@@ -1,0 +1,37 @@
+\doxysection{postprocess Namespace Reference}
+\hypertarget{namespacepostprocess}{}\label{namespacepostprocess}\index{postprocess@{postprocess}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+str \mbox{\hyperlink{namespacepostprocess_add27ebe6c731f52ae94886aceb59daa5}{normalize\+\_\+ocr\+\_\+text}} (str text)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file postprocess.py
+@brief Normalizzazione e pulizia del testo OCR.
+@ingroup ocr_module
+
+@details
+Il testo OCR può includere spaziature e ritorni a capo anomali.
+La normalizzazione riduce la variabilità prima del parsing.
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacepostprocess_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacepostprocess_add27ebe6c731f52ae94886aceb59daa5}\index{postprocess@{postprocess}!normalize\_ocr\_text@{normalize\_ocr\_text}}
+\index{normalize\_ocr\_text@{normalize\_ocr\_text}!postprocess@{postprocess}}
+\doxysubsubsection{\texorpdfstring{normalize\_ocr\_text()}{normalize\_ocr\_text()}}
+{\footnotesize\ttfamily \label{namespacepostprocess_add27ebe6c731f52ae94886aceb59daa5} 
+ str postprocess.\+normalize\+\_\+ocr\+\_\+text (\begin{DoxyParamCaption}\item[{str}]{text}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Normalizza testo OCR per parsing consistente.
+@param text Testo grezzo OCR.
+@return Testo normalizzato (trim, spazi ridotti, newline consolidati).
+
+@note
+Questa funzione non “corregge” semanticamente il testo; riduce artefatti.
+\end{DoxyVerb}
+ 

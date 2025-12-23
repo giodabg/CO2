@@ -1,0 +1,35 @@
+\doxysection{db Namespace Reference}
+\hypertarget{namespacedb}{}\label{namespacedb}\index{db@{db}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+sqlite3.\+Connection \mbox{\hyperlink{namespacedb_a1cbd2618c772165ee46175ff3f5ff7e5}{connect}} (str db\+\_\+path)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file db.py
+@brief Connessione SQLite e inizializzazione schema.
+@ingroup storage_module
+
+@details
+Centralizza la creazione della connessione e l'invocazione init_schema().
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacedb_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacedb_a1cbd2618c772165ee46175ff3f5ff7e5}\index{db@{db}!connect@{connect}}
+\index{connect@{connect}!db@{db}}
+\doxysubsubsection{\texorpdfstring{connect()}{connect()}}
+{\footnotesize\ttfamily \label{namespacedb_a1cbd2618c772165ee46175ff3f5ff7e5} 
+ sqlite3.\+Connection db.\+connect (\begin{DoxyParamCaption}\item[{str}]{db\+\_\+path}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Apre una connessione SQLite e garantisce schema pronto.
+@param db_path Path al file SQLite.
+@return sqlite3.Connection con row_factory impostata.
+
+@note Crea automaticamente la directory padre se non esiste.
+\end{DoxyVerb}
+ 

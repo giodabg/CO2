@@ -1,0 +1,163 @@
+\doxysection{parsing Namespace Reference}
+\hypertarget{namespaceparsing}{}\label{namespaceparsing}\index{parsing@{parsing}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Optional\mbox{[}float\mbox{]} \mbox{\hyperlink{namespaceparsing_ac099ce668cddacff98a78f6200853aa0}{\+\_\+to\+\_\+float\+\_\+eur}} (str s)
+\item 
+\mbox{\hyperlink{classmodels_1_1_merchant}{Merchant}} \mbox{\hyperlink{namespaceparsing_a0d41dd693d606cef53e2b2e299ede0bd}{parse\+\_\+merchant}} (str text)
+\item 
+\mbox{\hyperlink{classmodels_1_1_receipt_info}{Receipt\+Info}} \mbox{\hyperlink{namespaceparsing_a83bdb25879dae666030d50d648ecb912}{parse\+\_\+receipt\+\_\+info}} (str text)
+\item 
+\mbox{\hyperlink{classmodels_1_1_totals}{Totals}} \mbox{\hyperlink{namespaceparsing_ab5e09e3f299775d5b4ceee62df71bfe6}{parse\+\_\+totals}} (str text)
+\item 
+list\mbox{[}\mbox{\hyperlink{classmodels_1_1_item}{Item}}\mbox{]} \mbox{\hyperlink{namespaceparsing_a2017ff96e6956f4f0e0b0e004299904d}{parse\+\_\+items}} (str text)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespaceparsing_ae59117a0ad33c4412259bc504562edcf}{VAT\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(?\+:P\textbackslash{}.?\textbackslash{}s\texorpdfstring{$\ast$}{*}IVA\texorpdfstring{$\vert$}{|}PIVA\texorpdfstring{$\vert$}{|}VAT)\textbackslash{}s\texorpdfstring{$\ast$}{*}\mbox{[}\+:\textbackslash{}-\/\mbox{]}?\textbackslash{}s\texorpdfstring{$\ast$}{*}(\mbox{[}A-\/Z0-\/9\mbox{]}\{8,15\})\textbackslash{}b"{}, re.\+I)
+\item 
+\mbox{\hyperlink{namespaceparsing_a78cece2e95ce3cacf2c30f3c8a371ef7}{DATE\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2,4\})\textbackslash{}b"{})
+\item 
+\mbox{\hyperlink{namespaceparsing_abf27489b321a01a9b76be844a0c32845}{TIME\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\+:\textbackslash{}d\{2\})\textbackslash{}b"{})
+\item 
+\mbox{\hyperlink{namespaceparsing_aeacc429fe9037ca5df4e2d4b7dc86a61}{TOTAL\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(?\+:TOTALE\texorpdfstring{$\vert$}{|}TOT\texorpdfstring{$\vert$}{|}TOTAL)\textbackslash{}b.\texorpdfstring{$\ast$}{*}?(\textbackslash{}d+\mbox{[}\textbackslash{},\textbackslash{}.\mbox{]}\textbackslash{}d\{2\})\textbackslash{}b"{}, re.\+I)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file parsing.py
+@brief Parsing euristico del testo OCR in metadati strutturati.
+@ingroup domain_module
+
+@details
+Contiene regole/regex euristiche per estrarre:
+- merchant (nome, P.IVA, indirizzo)
+- receipt info (data/ora, numero documento)
+- items (righe prodotto)
+- totals (totale documento)
+
+Questo è il modulo che tipicamente evolve di più.
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespaceparsing_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceparsing_ac099ce668cddacff98a78f6200853aa0}\index{parsing@{parsing}!\_to\_float\_eur@{\_to\_float\_eur}}
+\index{\_to\_float\_eur@{\_to\_float\_eur}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{\_to\_float\_eur()}{\_to\_float\_eur()}}
+{\footnotesize\ttfamily \label{namespaceparsing_ac099ce668cddacff98a78f6200853aa0} 
+ Optional\mbox{[}float\mbox{]} parsing.\+\_\+to\+\_\+float\+\_\+eur (\begin{DoxyParamCaption}\item[{str}]{s}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+\begin{DoxyVerb}@brief Converte stringa euro in float normalizzato.
+@param s Stringa numerica potenzialmente con '.' migliaia e ',' decimali.
+@return Float o None se conversione fallisce.
+
+@note Esempio: '1.234,56' -> 1234.56
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=327pt]{namespaceparsing_ac099ce668cddacff98a78f6200853aa0_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{namespaceparsing_a2017ff96e6956f4f0e0b0e004299904d}\index{parsing@{parsing}!parse\_items@{parse\_items}}
+\index{parse\_items@{parse\_items}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{parse\_items()}{parse\_items()}}
+{\footnotesize\ttfamily \label{namespaceparsing_a2017ff96e6956f4f0e0b0e004299904d} 
+ list\mbox{[}\mbox{\hyperlink{classmodels_1_1_item}{Item}}\mbox{]} parsing.\+parse\+\_\+items (\begin{DoxyParamCaption}\item[{str}]{text}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Estrae righe prodotto.
+@param text Testo OCR normalizzato.
+@return Lista di Item.
+
+@details
+Heuristic: righe che terminano con un prezzo (es. 'PANE 1,20').
+Non gestisce ancora quantità/unità in modo robusto.
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=327pt]{namespaceparsing_a2017ff96e6956f4f0e0b0e004299904d_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{namespaceparsing_a0d41dd693d606cef53e2b2e299ede0bd}\index{parsing@{parsing}!parse\_merchant@{parse\_merchant}}
+\index{parse\_merchant@{parse\_merchant}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{parse\_merchant()}{parse\_merchant()}}
+{\footnotesize\ttfamily \label{namespaceparsing_a0d41dd693d606cef53e2b2e299ede0bd} 
+ \mbox{\hyperlink{classmodels_1_1_merchant}{Merchant}} parsing.\+parse\+\_\+merchant (\begin{DoxyParamCaption}\item[{str}]{text}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Estrae informazioni merchant (nome, P.IVA, indirizzo).
+@param text Testo OCR normalizzato.
+@return Merchant con campi valorizzati quando possibile.
+
+@note Heuristics:
+- Prima riga non vuota come nome.
+- Ricerca P.IVA tramite regex VAT_RE.
+- Indirizzo stimato da riga contenente CAP (5 cifre).
+\end{DoxyVerb}
+ \Hypertarget{namespaceparsing_a83bdb25879dae666030d50d648ecb912}\index{parsing@{parsing}!parse\_receipt\_info@{parse\_receipt\_info}}
+\index{parse\_receipt\_info@{parse\_receipt\_info}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{parse\_receipt\_info()}{parse\_receipt\_info()}}
+{\footnotesize\ttfamily \label{namespaceparsing_a83bdb25879dae666030d50d648ecb912} 
+ \mbox{\hyperlink{classmodels_1_1_receipt_info}{Receipt\+Info}} parsing.\+parse\+\_\+receipt\+\_\+info (\begin{DoxyParamCaption}\item[{str}]{text}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Estrae metadati del documento (datetime, numero).
+@param text Testo OCR normalizzato.
+@return ReceiptInfo popolato euristicamente.
+
+@note La standardizzazione ISO della data può essere gestita in uno step successivo.
+\end{DoxyVerb}
+ \Hypertarget{namespaceparsing_ab5e09e3f299775d5b4ceee62df71bfe6}\index{parsing@{parsing}!parse\_totals@{parse\_totals}}
+\index{parse\_totals@{parse\_totals}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{parse\_totals()}{parse\_totals()}}
+{\footnotesize\ttfamily \label{namespaceparsing_ab5e09e3f299775d5b4ceee62df71bfe6} 
+ \mbox{\hyperlink{classmodels_1_1_totals}{Totals}} parsing.\+parse\+\_\+totals (\begin{DoxyParamCaption}\item[{str}]{text}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Estrae i totali (attualmente solo total).
+@param text Testo OCR normalizzato.
+@return Totals con campo total valorizzato se trovato.
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=327pt]{namespaceparsing_ab5e09e3f299775d5b4ceee62df71bfe6_cgraph}
+\end{center}
+\end{figure}
+
+
+\label{doc-var-members}
+\Hypertarget{namespaceparsing_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{namespaceparsing_a78cece2e95ce3cacf2c30f3c8a371ef7}\index{parsing@{parsing}!DATE\_RE@{DATE\_RE}}
+\index{DATE\_RE@{DATE\_RE}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{DATE\_RE}{DATE\_RE}}
+{\footnotesize\ttfamily \label{namespaceparsing_a78cece2e95ce3cacf2c30f3c8a371ef7} 
+parsing.\+DATE\+\_\+\+RE = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2,4\})\textbackslash{}b"{})}
+
+\Hypertarget{namespaceparsing_abf27489b321a01a9b76be844a0c32845}\index{parsing@{parsing}!TIME\_RE@{TIME\_RE}}
+\index{TIME\_RE@{TIME\_RE}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{TIME\_RE}{TIME\_RE}}
+{\footnotesize\ttfamily \label{namespaceparsing_abf27489b321a01a9b76be844a0c32845} 
+parsing.\+TIME\+\_\+\+RE = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\+:\textbackslash{}d\{2\})\textbackslash{}b"{})}
+
+\Hypertarget{namespaceparsing_aeacc429fe9037ca5df4e2d4b7dc86a61}\index{parsing@{parsing}!TOTAL\_RE@{TOTAL\_RE}}
+\index{TOTAL\_RE@{TOTAL\_RE}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{TOTAL\_RE}{TOTAL\_RE}}
+{\footnotesize\ttfamily \label{namespaceparsing_aeacc429fe9037ca5df4e2d4b7dc86a61} 
+parsing.\+TOTAL\+\_\+\+RE = re.\+compile(r"{}\textbackslash{}b(?\+:TOTALE\texorpdfstring{$\vert$}{|}TOT\texorpdfstring{$\vert$}{|}TOTAL)\textbackslash{}b.\texorpdfstring{$\ast$}{*}?(\textbackslash{}d+\mbox{[}\textbackslash{},\textbackslash{}.\mbox{]}\textbackslash{}d\{2\})\textbackslash{}b"{}, re.\+I)}
+
+\Hypertarget{namespaceparsing_ae59117a0ad33c4412259bc504562edcf}\index{parsing@{parsing}!VAT\_RE@{VAT\_RE}}
+\index{VAT\_RE@{VAT\_RE}!parsing@{parsing}}
+\doxysubsubsection{\texorpdfstring{VAT\_RE}{VAT\_RE}}
+{\footnotesize\ttfamily \label{namespaceparsing_ae59117a0ad33c4412259bc504562edcf} 
+parsing.\+VAT\+\_\+\+RE = re.\+compile(r"{}\textbackslash{}b(?\+:P\textbackslash{}.?\textbackslash{}s\texorpdfstring{$\ast$}{*}IVA\texorpdfstring{$\vert$}{|}PIVA\texorpdfstring{$\vert$}{|}VAT)\textbackslash{}s\texorpdfstring{$\ast$}{*}\mbox{[}\+:\textbackslash{}-\/\mbox{]}?\textbackslash{}s\texorpdfstring{$\ast$}{*}(\mbox{[}A-\/Z0-\/9\mbox{]}\{8,15\})\textbackslash{}b"{}, re.\+I)}
+

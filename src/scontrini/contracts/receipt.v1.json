@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.0",
+  "source": {
+    "image_path": "examples/sample_receipt.jpg",
+    "captured_at": "2025-12-23T10:20:00+01:00"
+  },
+  "merchant": {
+    "name": null,
+    "address": null,
+    "vat_id": null,
+    "fiscal_code": null,
+    "country": "IT"
+  },
+  "receipt": {
+    "currency": "EUR",
+    "datetime": null,
+    "document_number": null,
+    "payment_method": null
+  },
+  "items": [
+    {
+      "raw_line": null,
+      "name": null,
+      "quantity": null,
+      "unit": null,
+      "unit_price": null,
+      "total_price": null,
+      "vat_rate": null
+    }
+  ],
+  "totals": {
+    "subtotal": null,
+    "vat_total": null,
+    "total": null
+  },
+  "ocr": {
+    "engine": "tesseract",
+    "lang": "ita",
+    "text": null,
+    "confidence": null
+  },
+  "quality": {
+    "preprocess_steps": [],
+    "warnings": []
+  }
+}

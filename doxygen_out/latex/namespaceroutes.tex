@@ -1,0 +1,69 @@
+\doxysection{routes Namespace Reference}
+\hypertarget{namespaceroutes}{}\label{namespaceroutes}\index{routes@{routes}}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classroutes_1_1_ingest_request}{Ingest\+Request}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespaceroutes_a201261987728e5690485e3d7aa6b951f}{ingest}} (\mbox{\hyperlink{classroutes_1_1_ingest_request}{Ingest\+Request}} req)
+\item 
+\mbox{\hyperlink{namespaceroutes_acc5c643d474a9ae2a88fd59a8c345d59}{health}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespaceroutes_a2b604d33043f852dada25fa304bb707f}{router}} = APIRouter()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file routes.py
+@brief Endpoints HTTP per ingest scontrino e health.
+@ingroup api_module
+
+@details
+Espone API minimali:
+- GET /health
+- POST /ingest
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespaceroutes_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceroutes_acc5c643d474a9ae2a88fd59a8c345d59}\index{routes@{routes}!health@{health}}
+\index{health@{health}!routes@{routes}}
+\doxysubsubsection{\texorpdfstring{health()}{health()}}
+{\footnotesize\ttfamily \label{namespaceroutes_acc5c643d474a9ae2a88fd59a8c345d59} 
+routes.\+health (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Healthcheck semplice.
+@return {"ok": True}
+\end{DoxyVerb}
+ \Hypertarget{namespaceroutes_a201261987728e5690485e3d7aa6b951f}\index{routes@{routes}!ingest@{ingest}}
+\index{ingest@{ingest}!routes@{routes}}
+\doxysubsubsection{\texorpdfstring{ingest()}{ingest()}}
+{\footnotesize\ttfamily \label{namespaceroutes_a201261987728e5690485e3d7aa6b951f} 
+routes.\+ingest (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classroutes_1_1_ingest_request}{Ingest\+Request}}}]{req}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Esegue OCR+parsing e persiste il risultato.
+@param req IngestRequest con path immagine, timestamp, db path e lingua.
+@return JSON con receipt_id e contract serializzato.
+
+@note
+Questo endpoint è pensato per essere consumato da una UI WebView.
+\end{DoxyVerb}
+ 
+
+\label{doc-var-members}
+\Hypertarget{namespaceroutes_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{namespaceroutes_a2b604d33043f852dada25fa304bb707f}\index{routes@{routes}!router@{router}}
+\index{router@{router}!routes@{routes}}
+\doxysubsubsection{\texorpdfstring{router}{router}}
+{\footnotesize\ttfamily \label{namespaceroutes_a2b604d33043f852dada25fa304bb707f} 
+routes.\+router = APIRouter()}
+

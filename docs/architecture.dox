@@ -1,0 +1,22 @@
+/** @page architecture Architettura e responsabilità
+ *
+ * @section layers Layering
+ * Il progetto è separato in layer:
+ * - Domain: definisce i modelli e la logica di interpretazione del testo OCR.
+ * - OCR: produce testo e metadati di qualità dalla foto.
+ * - Storage: persiste il contratto su SQLite.
+ * - API: espone endpoint per ingest.
+ * - CLI: entrypoint locale, utile per debug e batch.
+ *
+ * @section dependencies Dipendenze (direction)
+ * Dipendenze desiderate:
+ * - api -> (cli pipeline) -> ocr + domain + storage
+ * - cli -> ocr + domain + storage
+ * - domain -> (no dipendenze verso api/storage)
+ * - storage -> domain (solo modelli)
+ *
+ * @section extensibility Estendibilità
+ * 1) Sostituire OCR engine: aggiungere nuovi moduli in ocr/ e mantenere firma simile a run_tesseract().
+ * 2) Migliorare parsing: estendere domain/parsing.py con regole italiane e test di regressione.
+ * 3) UI WebView: consumare API /ingest e utilizzare contract JSON come DTO stabile.
+ */

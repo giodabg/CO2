@@ -1,0 +1,47 @@
+\doxysection{engine Namespace Reference}
+\hypertarget{namespaceengine}{}\label{namespaceengine}\index{engine@{engine}}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classengine_1_1_ocr_result}{Ocr\+Result}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classengine_1_1_ocr_result}{Ocr\+Result}} \mbox{\hyperlink{namespaceengine_a311fca75d87ecf19241a52d12f2cfccd}{run\+\_\+tesseract}} (np.\+ndarray image\+\_\+bin, str lang="{}ita"{})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file engine.py
+@brief Wrapper per il motore OCR.
+@ingroup ocr_module
+
+@details
+Attualmente usa Tesseract tramite pytesseract. Il wrapper separa:
+- configurazione OCR
+- esecuzione OCR
+- standardizzazione output (testo + confidenza)
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespaceengine_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceengine_a311fca75d87ecf19241a52d12f2cfccd}\index{engine@{engine}!run\_tesseract@{run\_tesseract}}
+\index{run\_tesseract@{run\_tesseract}!engine@{engine}}
+\doxysubsubsection{\texorpdfstring{run\_tesseract()}{run\_tesseract()}}
+{\footnotesize\ttfamily \label{namespaceengine_a311fca75d87ecf19241a52d12f2cfccd} 
+ \mbox{\hyperlink{classengine_1_1_ocr_result}{Ocr\+Result}} engine.\+run\+\_\+tesseract (\begin{DoxyParamCaption}\item[{np.\+ndarray}]{image\+\_\+bin}{, }\item[{str }]{lang}{ = {\ttfamily "{}ita"{}}}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Esegue OCR Tesseract su immagine binarizzata.
+@param image_bin Immagine binaria (tipicamente output di preprocess_for_ocr).
+@param lang Codice lingua Tesseract (es. "ita", "eng").
+@return OcrResult con testo e confidenza (se disponibile).
+
+@note
+- Configurazione OCR: OEM 1 (LSTM), PSM 6 (blocco uniforme).
+- La confidenza non è sempre affidabile senza image_to_data; qui è None.
+@see preprocess_for_ocr
+\end{DoxyVerb}
+ 

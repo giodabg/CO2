@@ -1,0 +1,33 @@
+\chapter{Scontrini -\/ OCR \& Receipt Parsing }
+\hypertarget{index}{}\label{index}\index{Scontrini -\/ OCR \& Receipt Parsing@{Scontrini -\/ OCR \& Receipt Parsing}}
+\hypertarget{index_intro_sec}{}\doxysection{\texorpdfstring{Introduzione}{Introduzione}}\label{index_intro_sec}
+Il progetto "{}scontrini"{} implementa una pipeline locale\+:
+\begin{DoxyItemize}
+\item acquisizione immagine (foto scontrino)
+\item pre-\/processing (Open\+CV)
+\item OCR (Tesseract via pytesseract)
+\item normalizzazione del testo
+\item parsing euristico in strutture dati versionate (Receipt\+Contract\+V1)
+\item persistenza su SQLite
+\item esposizione API via Fast\+API (base per UI Web\+View su Android e Windows)
+\end{DoxyItemize}\hypertarget{index_arch_sec}{}\doxysection{\texorpdfstring{Architettura (high level)}{Architettura (high level)}}\label{index_arch_sec}
+La pipeline segue il flusso\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Image\ -\/>\ \mbox{\hyperlink{namespacepreprocess}{preprocess}}\ -\/>\ OCR\ -\/>\ \mbox{\hyperlink{namespacepostprocess}{postprocess}}\ -\/>\ \mbox{\hyperlink{namespaceparsing}{parsing}}\ -\/>\ contract\ -\/>\ storage/API}
+
+\end{DoxyCode}
+\hypertarget{index_modules_sec}{}\doxysection{\texorpdfstring{Moduli principali}{Moduli principali}}\label{index_modules_sec}
+
+\begin{DoxyItemize}
+\item \doxysectlink{modules_ocr_module}{OCR}{1} \+: pre-\/processing, OCR engine, post-\/processing testo
+\item \doxysectlink{modules_domain_module}{Domain}{1} \+: modelli dominio e parsing euristico
+\item \doxysectlink{modules_storage_module}{Storage}{1} \+: schema SQLite, connessione e repository
+\item \doxysectlink{modules_api_module}{API}{1} \+: API HTTP per ingest e healthcheck
+\item \doxysectlink{modules_cli_module}{CLI}{1} \+: comandi CLI per batch e debug
+\end{DoxyItemize}\hypertarget{index_quality_sec}{}\doxysection{\texorpdfstring{Qualità e limiti}{Qualità e limiti}}\label{index_quality_sec}
+Il parsing è euristico; gli scontrini hanno formati variabili. Le estensioni tipiche includono\+:
+\begin{DoxyItemize}
+\item miglioramento regex IT (P.\+IVA, CF, CAP, aliquote)
+\item scoring/confidenza OCR
+\item deduplicazione merchant e normalizzazione prodotti 
+\end{DoxyItemize}

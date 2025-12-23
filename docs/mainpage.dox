@@ -1,0 +1,32 @@
+/** @mainpage Scontrini - OCR & Receipt Parsing
+ *
+ * @section intro_sec Introduzione
+ * Il progetto "scontrini" implementa una pipeline locale:
+ * - acquisizione immagine (foto scontrino)
+ * - pre-processing (OpenCV)
+ * - OCR (Tesseract via pytesseract)
+ * - normalizzazione del testo
+ * - parsing euristico in strutture dati versionate (ReceiptContractV1)
+ * - persistenza su SQLite
+ * - esposizione API via FastAPI (base per UI WebView su Android e Windows)
+ *
+ * @section arch_sec Architettura (high level)
+ * La pipeline segue il flusso:
+ * @code
+ * Image -> preprocess -> OCR -> postprocess -> parsing -> contract -> storage/API
+ * @endcode
+ *
+ * @section modules_sec Moduli principali
+ * - @ref ocr_module : pre-processing, OCR engine, post-processing testo
+ * - @ref domain_module : modelli dominio e parsing euristico
+ * - @ref storage_module : schema SQLite, connessione e repository
+ * - @ref api_module : API HTTP per ingest e healthcheck
+ * - @ref cli_module : comandi CLI per batch e debug
+ *
+ * @section quality_sec Qualità e limiti
+ * Il parsing è euristico; gli scontrini hanno formati variabili.
+ * Le estensioni tipiche includono:
+ * - miglioramento regex IT (P.IVA, CF, CAP, aliquote)
+ * - scoring/confidenza OCR
+ * - deduplicazione merchant e normalizzazione prodotti
+ */

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/scontrini/receipt.schema.json",
+  "title": "Receipt Contract v1",
+  "type": "object",
+  "required": ["contract_version", "source", "merchant", "receipt", "items", "totals", "ocr", "quality"],
+  "properties": {
+    "contract_version": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["image_path", "captured_at"],
+      "properties": {
+        "image_path": { "type": "string" },
+        "captured_at": { "type": "string" }
+      }
+    },
+    "merchant": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "address": { "type": ["string", "null"] },
+        "vat_id": { "type": ["string", "null"] },
+        "fiscal_code": { "type": ["string", "null"] },
+        "country": { "type": "string" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string" },
+        "datetime": { "type": ["string", "null"] },
+        "document_number": { "type": ["string", "null"] },
+        "payment_method": { "type": ["string", "null"] }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "raw_line": { "type": ["string", "null"] },
+          "name": { "type": ["string", "null"] },
+          "quantity": { "type": ["number", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "unit_price": { "type": ["number", "null"] },
+          "total_price": { "type": ["number", "null"] },
+          "vat_rate": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "subtotal": { "type": ["number", "null"] },
+        "vat_total": { "type": ["number", "null"] },
+        "total": { "type": ["number", "null"] }
+      }
+    },
+    "ocr": {
+      "type": "object",
+      "required": ["engine", "lang", "text"],
+      "properties": {
+        "engine": { "type": "string" },
+        "lang": { "type": "string" },
+        "text": { "type": ["string", "null"] },
+        "confidence": { "type": ["number", "null"] }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "preprocess_steps": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

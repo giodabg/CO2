@@ -1,0 +1,31 @@
+\doxysection{src/scontrini/domain/parsing.py File Reference}
+\hypertarget{parsing_8py}{}\label{parsing_8py}\index{src/scontrini/domain/parsing.py@{src/scontrini/domain/parsing.py}}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceparsing}{parsing}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Optional\mbox{[}float\mbox{]} \mbox{\hyperlink{namespaceparsing_ac099ce668cddacff98a78f6200853aa0}{parsing.\+\_\+to\+\_\+float\+\_\+eur}} (str s)
+\item 
+\mbox{\hyperlink{classmodels_1_1_merchant}{Merchant}} \mbox{\hyperlink{namespaceparsing_a0d41dd693d606cef53e2b2e299ede0bd}{parsing.\+parse\+\_\+merchant}} (str text)
+\item 
+\mbox{\hyperlink{classmodels_1_1_receipt_info}{Receipt\+Info}} \mbox{\hyperlink{namespaceparsing_a83bdb25879dae666030d50d648ecb912}{parsing.\+parse\+\_\+receipt\+\_\+info}} (str text)
+\item 
+\mbox{\hyperlink{classmodels_1_1_totals}{Totals}} \mbox{\hyperlink{namespaceparsing_ab5e09e3f299775d5b4ceee62df71bfe6}{parsing.\+parse\+\_\+totals}} (str text)
+\item 
+list\mbox{[}\mbox{\hyperlink{classmodels_1_1_item}{Item}}\mbox{]} \mbox{\hyperlink{namespaceparsing_a2017ff96e6956f4f0e0b0e004299904d}{parsing.\+parse\+\_\+items}} (str text)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespaceparsing_ae59117a0ad33c4412259bc504562edcf}{parsing.\+VAT\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(?\+:P\textbackslash{}.?\textbackslash{}s\texorpdfstring{$\ast$}{*}IVA\texorpdfstring{$\vert$}{|}PIVA\texorpdfstring{$\vert$}{|}VAT)\textbackslash{}s\texorpdfstring{$\ast$}{*}\mbox{[}\+:\textbackslash{}-\/\mbox{]}?\textbackslash{}s\texorpdfstring{$\ast$}{*}(\mbox{[}A-\/Z0-\/9\mbox{]}\{8,15\})\textbackslash{}b"{}, re.\+I)
+\item 
+\mbox{\hyperlink{namespaceparsing_a78cece2e95ce3cacf2c30f3c8a371ef7}{parsing.\+DATE\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2\}\mbox{[}\textbackslash{}/\textbackslash{}-\/\textbackslash{}.\mbox{]}\textbackslash{}d\{2,4\})\textbackslash{}b"{})
+\item 
+\mbox{\hyperlink{namespaceparsing_abf27489b321a01a9b76be844a0c32845}{parsing.\+TIME\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(\textbackslash{}d\{2\}\+:\textbackslash{}d\{2\})\textbackslash{}b"{})
+\item 
+\mbox{\hyperlink{namespaceparsing_aeacc429fe9037ca5df4e2d4b7dc86a61}{parsing.\+TOTAL\+\_\+\+RE}} = re.\+compile(r"{}\textbackslash{}b(?\+:TOTALE\texorpdfstring{$\vert$}{|}TOT\texorpdfstring{$\vert$}{|}TOTAL)\textbackslash{}b.\texorpdfstring{$\ast$}{*}?(\textbackslash{}d+\mbox{[}\textbackslash{},\textbackslash{}.\mbox{]}\textbackslash{}d\{2\})\textbackslash{}b"{}, re.\+I)
+\end{DoxyCompactItemize}

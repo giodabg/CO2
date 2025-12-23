@@ -1,0 +1,5 @@
+<map id="models.Item" name="models.Item">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,89,320"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="10,5,85,75"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="48,87,50,123,45,123,47,93"/>
+</map>

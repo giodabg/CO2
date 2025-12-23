@@ -1,0 +1,70 @@
+\doxysection{scontrini.\+cli Namespace Reference}
+\hypertarget{namespacescontrini_1_1cli}{}\label{namespacescontrini_1_1cli}\index{scontrini.cli@{scontrini.cli}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Receipt\+Contract\+V1 \mbox{\hyperlink{namespacescontrini_1_1cli_aa619561a8525f8896809ae0f86f1f265}{build\+\_\+contract}} (str image\+\_\+path, str captured\+\_\+at, str lang)
+\item 
+None \mbox{\hyperlink{namespacescontrini_1_1cli_a1e6999939305b32ce539821cb51ed8e9}{main}} ()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file cli.py
+@brief CLI per esecuzione pipeline (OCR+parsing) e persistenza.
+@ingroup cli_module
+
+@details
+Comandi:
+- dump-json: stampa contratto JSON senza DB
+- run: salva su SQLite e stampa receipt_id
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacescontrini_1_1cli_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacescontrini_1_1cli_aa619561a8525f8896809ae0f86f1f265}\index{scontrini.cli@{scontrini.cli}!build\_contract@{build\_contract}}
+\index{build\_contract@{build\_contract}!scontrini.cli@{scontrini.cli}}
+\doxysubsubsection{\texorpdfstring{build\_contract()}{build\_contract()}}
+{\footnotesize\ttfamily \label{namespacescontrini_1_1cli_aa619561a8525f8896809ae0f86f1f265} 
+ Receipt\+Contract\+V1 scontrini.\+cli.\+build\+\_\+contract (\begin{DoxyParamCaption}\item[{str}]{image\+\_\+path}{, }\item[{str}]{captured\+\_\+at}{, }\item[{str}]{lang}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Costruisce il contratto ReceiptContractV1 a partire da una foto.
+@param image_path Path immagine (jpg/png).
+@param captured_at Timestamp cattura (stringa ISO).
+@param lang Lingua OCR (Tesseract).
+@return ReceiptContractV1 completo.
+
+@throws FileNotFoundError Se l'immagine non è leggibile da OpenCV.
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=294pt]{namespacescontrini_1_1cli_aa619561a8525f8896809ae0f86f1f265_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{namespacescontrini_1_1cli_a1e6999939305b32ce539821cb51ed8e9}\index{scontrini.cli@{scontrini.cli}!main@{main}}
+\index{main@{main}!scontrini.cli@{scontrini.cli}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily \label{namespacescontrini_1_1cli_a1e6999939305b32ce539821cb51ed8e9} 
+ None scontrini.\+cli.\+main (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Entry point CLI.
+@return None
+
+@details
+Parse args e invoca build_contract, poi:
+- dump-json: stampa JSON
+- run: persiste su DB e stampa receipt_id
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=294pt]{namespacescontrini_1_1cli_a1e6999939305b32ce539821cb51ed8e9_cgraph}
+\end{center}
+\end{figure}

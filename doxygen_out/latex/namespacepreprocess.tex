@@ -1,0 +1,44 @@
+\doxysection{preprocess Namespace Reference}
+\hypertarget{namespacepreprocess}{}\label{namespacepreprocess}\index{preprocess@{preprocess}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+tuple\mbox{[}np.\+ndarray, list\mbox{[}str\mbox{]}\mbox{]} \mbox{\hyperlink{namespacepreprocess_a27cc7b58309198175ed026f3ae0d5f47}{preprocess\+\_\+for\+\_\+ocr}} (np.\+ndarray image\+\_\+bgr)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file preprocess.py
+@brief Pre-processing di immagini di scontrini per aumentare la qualità OCR.
+@ingroup ocr_module
+
+@details
+Il pre-processing mira a rendere il testo più leggibile da OCR:
+- conversione in scala di grigi
+- riduzione rumore
+- binarizzazione adattiva
+- morfologia per connettere stroke dei caratteri
+
+L'output include anche la lista degli step applicati per auditing/qualità.
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacepreprocess_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacepreprocess_a27cc7b58309198175ed026f3ae0d5f47}\index{preprocess@{preprocess}!preprocess\_for\_ocr@{preprocess\_for\_ocr}}
+\index{preprocess\_for\_ocr@{preprocess\_for\_ocr}!preprocess@{preprocess}}
+\doxysubsubsection{\texorpdfstring{preprocess\_for\_ocr()}{preprocess\_for\_ocr()}}
+{\footnotesize\ttfamily \label{namespacepreprocess_a27cc7b58309198175ed026f3ae0d5f47} 
+ tuple\mbox{[}np.\+ndarray, list\mbox{[}str\mbox{]}\mbox{]} preprocess.\+preprocess\+\_\+for\+\_\+ocr (\begin{DoxyParamCaption}\item[{np.\+ndarray}]{image\+\_\+bgr}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Applica una pipeline di pre-processing ad un'immagine BGR.
+@param image_bgr Immagine in formato BGR (tipico output di cv2.imread).
+@return Tuple (image_bin, steps) dove:
+        - image_bin è un'immagine binarizzata pronta per OCR
+        - steps è l'elenco degli step applicati in ordine
+
+@throws ValueError Se l'immagine è vuota o non valida (estendibile).
+@note La pipeline è deliberatamente semplice; è prevista evoluzione.
+\end{DoxyVerb}
+ 

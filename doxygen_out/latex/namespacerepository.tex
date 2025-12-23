@@ -1,0 +1,50 @@
+\doxysection{repository Namespace Reference}
+\hypertarget{namespacerepository}{}\label{namespacerepository}\index{repository@{repository}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+None \mbox{\hyperlink{namespacerepository_ae9e86c965c5a8a5642b6a426bd352eae}{init\+\_\+schema}} (sqlite3.\+Connection conn)
+\item 
+int \mbox{\hyperlink{namespacerepository_a91511eb3aeae757e3131628f79a9799f}{insert\+\_\+receipt}} (sqlite3.\+Connection conn, Receipt\+Contract\+V1 contract)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file repository.py
+@brief Layer repository per persistenza del contratto su SQLite.
+@ingroup storage_module
+
+@details
+Isola SQL e schema dal resto dell'applicazione.
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacerepository_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacerepository_ae9e86c965c5a8a5642b6a426bd352eae}\index{repository@{repository}!init\_schema@{init\_schema}}
+\index{init\_schema@{init\_schema}!repository@{repository}}
+\doxysubsubsection{\texorpdfstring{init\_schema()}{init\_schema()}}
+{\footnotesize\ttfamily \label{namespacerepository_ae9e86c965c5a8a5642b6a426bd352eae} 
+ None repository.\+init\+\_\+schema (\begin{DoxyParamCaption}\item[{sqlite3.\+Connection}]{conn}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Applica lo schema SQL (idempotente).
+@param conn Connessione SQLite.
+@return None
+\end{DoxyVerb}
+ \Hypertarget{namespacerepository_a91511eb3aeae757e3131628f79a9799f}\index{repository@{repository}!insert\_receipt@{insert\_receipt}}
+\index{insert\_receipt@{insert\_receipt}!repository@{repository}}
+\doxysubsubsection{\texorpdfstring{insert\_receipt()}{insert\_receipt()}}
+{\footnotesize\ttfamily \label{namespacerepository_a91511eb3aeae757e3131628f79a9799f} 
+ int repository.\+insert\+\_\+receipt (\begin{DoxyParamCaption}\item[{sqlite3.\+Connection}]{conn}{, }\item[{Receipt\+Contract\+V1}]{contract}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}@brief Inserisce un ReceiptContractV1 nel database.
+@param conn Connessione SQLite.
+@param contract Contratto dati da persistere.
+@return ID (PK) della receipt inserita.
+
+@details
+- Inserisce record in receipts
+- Inserisce righe in receipt_items con FK verso receipts
+\end{DoxyVerb}
+ 

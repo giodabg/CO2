@@ -1,0 +1,36 @@
+\doxysection{models Namespace Reference}
+\hypertarget{namespacemodels}{}\label{namespacemodels}\index{models@{models}}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_source}{Source}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_merchant}{Merchant}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_receipt_info}{Receipt\+Info}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_item}{Item}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_totals}{Totals}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_ocr_info}{Ocr\+Info}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_quality}{Quality}}
+\item 
+class \mbox{\hyperlink{classmodels_1_1_receipt_contract_v1}{Receipt\+Contract\+V1}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}@file models.py
+@brief Modelli dominio (contratto JSON) tramite Pydantic.
+@ingroup domain_module
+
+@details
+Definisce il contratto dati versionato ReceiptContractV1.
+Questi modelli fungono da:
+- DTO tra layer (OCR/parsing/storage/api)
+- schema implicito per serializzazione JSON
+- base per validazione input/output
+\end{DoxyVerb}
+ 

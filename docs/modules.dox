@@ -1,0 +1,22 @@
+/** @page modules Moduli
+ *
+ * @section ocr_module OCR
+ * @ref scontrini.ocr.preprocess
+ * @ref scontrini.ocr.engine
+ * @ref scontrini.ocr.postprocess
+ *
+ * @section domain_module Domain
+ * @ref scontrini.domain.models
+ * @ref scontrini.domain.parsing
+ *
+ * @section storage_module Storage
+ * @ref scontrini.storage.db
+ * @ref scontrini.storage.repository
+ *
+ * @section api_module API
+ * @ref scontrini.api.main
+ * @ref scontrini.api.routes
+ *
+ * @section cli_module CLI
+ * @ref scontrini.cli
+ */

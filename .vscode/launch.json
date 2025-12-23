@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run API (uvicorn)",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["scontrini.api.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

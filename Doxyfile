@@ -1,0 +1,26 @@
+PROJECT_NAME           = "scontrini"
+OUTPUT_DIRECTORY       = doxygen_out
+INPUT                  = src docs
+RECURSIVE              = YES
+FILE_PATTERNS          = *.py *.dox
+
+# Python
+OPTIMIZE_OUTPUT_JAVA   = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+QUIET                  = NO
+
+# Diagrammi (Graphviz)
+HAVE_DOT               = YES
+DOT_GRAPH_MAX_NODES    = 100
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+DIRECTORY_GRAPH        = YES
+CLASS_DIAGRAMS         = YES
+UML_LOOK               = YES
+
+# Utile per avere i "Groups" e pagine
+GENERATE_TREEVIEW      = YES

@@ -1,0 +1,76 @@
+2️⃣ Attiva il virtual environment
+.\.venv\Scripts\Activate.ps1
+
+
+Il prompt deve cambiare in qualcosa tipo:
+
+(.venv) PS C:\...\scontrini>
+
+
+Se non cambia, fermati: il venv non è attivo.
+
+3️⃣ Verifica che Python sia quello del venv
+where python
+
+
+Deve restituire solo qualcosa come:
+
+...\scontrini\.venv\Scripts\python.exe
+
+
+Se vedi AppData\Local\Programs\Python, il venv NON è attivo.
+
+4️⃣ Usa pip nel modo corretto (questo NON può fallire)
+python -m pip install --upgrade pip
+python -m pip install -e .
+
+
+⚠️ Non usare pip install da solo.
+
+5️⃣ Verifica che l’entry point sia stato creato
+dir .\.venv\Scripts\scontrini*
+
+
+Devi vedere:
+
+scontrini.exe
+
+6️⃣ Test finale
+scontrini --help
+
+
+Se vedi l’help, tutto è configurato correttamente.
+
+Se vuoi testare SUBITO (senza entry point)
+
+Anche senza pip, questo funziona sempre:
+
+python -m scontrini.cli dump-json --image examples\mio_scontrino.jpg --captured-at 2025-12-23T10:20:00+01:00
+
+
+Questo bypassa completamente pip e scontrini.exe.
+
+Problemi frequenti su Windows (da escludere)
+🔴 Execution Policy blocca Activate.ps1
+
+Se vedi errori tipo “running scripts is disabled”:
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+
+Poi chiudi e riapri PowerShell.
+
+🔴 .venv non esiste
+
+Allora crealo:
+
+py -3.11 -m venv .venv
+
+
+Poi torna al passo 2.
+
+Riassunto secco
+Errore	Significato
+pip not recognized	Devi usare python -m pip
+scontrini not recognized	Entry point non installato
+python -m scontrini.cli funziona	Progetto OK
