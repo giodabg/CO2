@@ -15,6 +15,15 @@ import json
 import cv2
 import re
 
+from scontrini.domain.models import OcrInfo, Quality, ReceiptContractV1, Source
+from scontrini.ocr.preprocess import preprocess_for_ocr
+from scontrini.ocr.engine import run_tesseract
+from scontrini.ocr.postprocess import normalize_ocr_text
+from scontrini.domain.parsing import parse_merchant, parse_receipt_info, parse_items, parse_totals
+from scontrini.storage.db import connect
+from scontrini.storage.repository import insert_receipt
+
+
 def _sum_items(items):
     s = 0.0
     for it in items:
@@ -26,14 +35,16 @@ def _extract_declared_items_count(text: str):
     m = re.search(r"\bARTICOLI\s+(\d+)\b", text, re.I)
     return int(m.group(1)) if m else None
 
-from scontrini.domain.models import OcrInfo, Quality, ReceiptContractV1, Source
-from scontrini.ocr.preprocess import preprocess_for_ocr
-from scontrini.ocr.engine import run_tesseract
-from scontrini.ocr.postprocess import normalize_ocr_text
-from scontrini.domain.parsing import parse_merchant, parse_receipt_info, parse_items, parse_totals
-from scontrini.storage.db import connect
-from scontrini.storage.repository import insert_receipt
 
+def _extract_paid_amount(text: str):
+    m = re.search(r"\bIMPORTO\s+PAGATO\b.*?(\d+[\,\.]\d{2})\b", text, re.I)
+    if not m:
+        return None
+    s = m.group(1).replace(".", "").replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return None
 
 def build_contract(image_path: str, captured_at: str, lang: str) -> ReceiptContractV1:
     """
@@ -68,13 +79,21 @@ def build_contract(image_path: str, captured_at: str, lang: str) -> ReceiptContr
 
     # Coerenza totale: se totals.total c'è, confronta con somma items
     items_sum = _sum_items(items)
-    if totals.total is not None:
+
+    if totals.total is None:
+        warnings.append("total_missing")
+    else:
         delta = abs(items_sum - float(totals.total))
         if delta > 0.05:
-            warnings.append(f"totals_inconsistent: sum_items={items_sum:.2f} total={totals.total:.2f} delta={delta:.2f}")
-    else:
-        # Se manca il totale, almeno segnala
-        warnings.append("total_missing")
+            warnings.append(
+                f"totals_inconsistent: sum_items={items_sum:.2f} total={float(totals.total):.2f} delta={delta:.2f}"
+            )
+
+    paid = _extract_paid_amount(text)
+    if paid is not None and totals.total is not None:
+        # Se l'importo pagato è molto diverso dal totale, segnala (tipico errore OCR 32,52 -> 92,52)
+        if abs(paid - float(totals.total)) > 0.50:
+            warnings.append(f"paid_amount_suspect: paid={paid:.2f} total={float(totals.total):.2f}")
 
     return ReceiptContractV1(
         source=Source(image_path=image_path, captured_at=captured_at),

@@ -24,26 +24,59 @@ DATE_RE = re.compile(r"\b(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{2,4})\b")
 TIME_RE = re.compile(r"\b(\d{2}:\d{2})\b")
 TOTAL_RE = re.compile(r"\b(?:TOTALE|TOT|TOTAL)\b.*?(\d+[\,\.]\d{2})\b", re.I)
 
-VAT_CODE_RATE_RE = re.compile(
-    r"\b([A-Z])\s*[:\-]?\s*IVA\s*([0-9]{1,2}(?:[\,\.][0-9]{1,2})?)\s*%\b",
-    re.I
-)
 
+# Sezioni tipiche scontrini
 SECTION_ITEMS_START_RE = re.compile(r"\bDESCRIZIONE\b", re.I)
 SECTION_ITEMS_END_RE = re.compile(r"\bARTICOLI\b", re.I)
 
-def _lines(text: str) -> list[str]:
-    return [l.strip() for l in text.splitlines() if l.strip()]
+# Totali (fallback quando "TOTALE COMPLESSIVO" non porta il numero sulla stessa riga)
+MONETA_RE = re.compile(r"\bMoneta\s+altro\b.*?(\d+[\,\.]\d{2})\b", re.I)
+PAGATO_RE = re.compile(r"\bIMPORTO\s+PAGATO\b.*?(\d+[\,\.]\d{2})\b", re.I)
+DI_CUI_IVA_RE = re.compile(r"\bDI\s+CUI\s+IVA\b.*?(\d+[\,\.]\d{2})\b", re.I)
 
-def _slice_between(lines: list[str], start_re: re.Pattern, end_re: re.Pattern) -> list[str]:
-    start_idx = next((i for i, l in enumerate(lines) if start_re.search(l)), None)
-    if start_idx is None:
-        return []
-    end_idx = next((i for i in range(start_idx + 1, len(lines)) if end_re.search(lines[i])), None)
-    if end_idx is None:
-        return lines[start_idx + 1 :]
-    return lines[start_idx + 1 : end_idx]
+# Legenda IVA: standard (A: IVA 4,00%) + variante OCR frequente "AAIVA 4,00%"
+VAT_CODE_RATE_STD = re.compile(
+    r"\b([ABC])\s*[:\-]?\s*IVA\s*([0-9]{1,2}(?:[\,\.][0-9]{1,2})?)\s*%\b",
+    re.I,
+)
 
+VAT_CODE_RATE_A_OCR = re.compile(
+    r"\bA{1,2}\s*[:\-]?\s*IVA\s*([0-9]{1,2}(?:[\,\.][0-9]{1,2})?)\s*%\b",
+    re.I,
+)
+
+VAT_CODE_RATE_AAIVA = re.compile(
+    r"\bAAIVA\s*([0-9]{1,2}(?:[\,\.][0-9]{1,2})?)\s*%\b",
+    re.I,
+)
+
+import re
+
+_ALLOWED_NAME_RE = re.compile(r"[^A-Za-z0-9À-ÿ\s\.\,]", re.UNICODE)
+_MULTI_SPACE_RE = re.compile(r"\s+")
+
+def clean_item_name(name: str) -> str:
+    """
+    Ripulisce un nome prodotto OCR:
+    - rimuove caratteri non plausibili (simboli OCR, pipe, apici strani, ecc.)
+    - mantiene lettere (incl. accentate), cifre, spazi, punto e virgola
+    - collassa spazi multipli
+    - rimuove punteggiatura ripetuta ai margini
+    """
+    if not name:
+        return name
+
+    # 1) elimina caratteri non ammessi
+    s = _ALLOWED_NAME_RE.sub(" ", name)
+
+    # 2) collassa spazi
+    s = _MULTI_SPACE_RE.sub(" ", s).strip()
+
+    # 3) pulizia margini: toglie puntini/virgole isolate all'inizio/fine
+    s = re.sub(r"^[\.\,]+\s*", "", s)
+    s = re.sub(r"\s*[\.\,]+$", "", s)
+
+    return s[:120]
 
 def _to_float_eur(s: str) -> Optional[float]:
     """
@@ -60,24 +93,91 @@ def _to_float_eur(s: str) -> Optional[float]:
         return None
 
 
+
+def _lines(text: str) -> list[str]:
+    return [l.strip() for l in text.splitlines() if l.strip()]
+
+
+def _slice_between(lines: list[str], start_re: re.Pattern, end_re: re.Pattern) -> list[str]:
+    """
+    Ritorna le righe tra una riga che matcha start_re e una riga che matcha end_re.
+    Se end_re non viene trovato, prende fino a fine testo.
+    """
+    start_idx = next((i for i, l in enumerate(lines) if start_re.search(l)), None)
+    if start_idx is None:
+        return []
+    end_idx = next((i for i in range(start_idx + 1, len(lines)) if end_re.search(lines[i])), None)
+    if end_idx is None:
+        return lines[start_idx + 1 :]
+    return lines[start_idx + 1 : end_idx]
+
+
+def _clean_merchant_line(s: str) -> str:
+    # Mantiene caratteri utili e normalizza gli spazi
+    s = re.sub(r"[^A-Za-z0-9À-ÿ\s\.\-]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _clean_item_line(s: str) -> str:
+    # Rimuove separatori tipici OCR (pipe) e compatta spazi
+    s = s.replace("|", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
 def _parse_vat_code_map(text: str) -> dict[str, float]:
     """
-    Estrae mapping codice IVA -> aliquota percentuale dal footer.
-    Esempio: 'A: IVA 4,00%' => {'A': 4.0}
+    Estrae mapping codice IVA -> aliquota percentuale.
+    Supporta:
+    - 'A: IVA 4,00%' (standard)
+    - 'A IVA 4,00%' / 'AA IVA 4,00%' (OCR)
+    - 'AAIVA 4,00%' (OCR comune)
     """
     code_map: dict[str, float] = {}
 
-    for m in VAT_CODE_RATE_RE.finditer(text):
+    for m in VAT_CODE_RATE_STD.finditer(text):
         code = m.group(1).upper()
         rate_s = m.group(2).replace(",", ".")
         try:
             code_map[code] = float(rate_s)
         except Exception:
-            # ignora valori non convertibili
             pass
+
+    if "A" not in code_map:
+        m2 = VAT_CODE_RATE_A_OCR.search(text)
+        if m2:
+            try:
+                code_map["A"] = float(m2.group(1).replace(",", "."))
+            except Exception:
+                pass
+
+    if "A" not in code_map:
+        m3 = VAT_CODE_RATE_AAIVA.search(text)
+        if m3:
+            try:
+                code_map["A"] = float(m3.group(1).replace(",", "."))
+            except Exception:
+                pass
 
     return code_map
 
+def _normalize_desc(desc: str) -> str:
+    desc = desc.upper()
+    desc = re.sub(r"[^A-Z0-9À-ÿ\s\.\-]", " ", desc)
+    desc = re.sub(r"\s+", " ", desc).strip()
+    # rimuove prefissi OCR comuni che non sono parte del nome
+    desc = re.sub(r"^(?:O|A|I|E)\s+", "", desc)
+    desc = re.sub(r"^(?:\-+|\.+)\s*", "", desc)
+    return desc
+
+def strip_leading_singleton(name: str) -> str:
+    # rimuove un singolo token di 1 char se seguito da testo significativo
+    return re.sub(r"^(?:[A-Za-z])\s+(?=\w{3,})", "", name).strip()
+
+
+SECTION_ITEMS_START_RE = re.compile(r"\bDESCRIZIONE\b", re.I)
+SECTION_ITEMS_END_RE = re.compile(r"\bARTICOLI\b", re.I)
 
 def parse_merchant(text: str) -> Merchant:
     """
@@ -120,7 +220,7 @@ def parse_merchant(text: str) -> Merchant:
 
     cap_line = next((l for l in lines if re.search(r"\b\d{5}\b", l)), None)
     if cap_line:
-        merchant.address = cap_line[:200]
+        merchant.address = _clean_merchant_line(cap_line)[:200]
 
     return merchant
 
@@ -160,9 +260,19 @@ def parse_totals(text: str) -> Totals:
     @return Totals con campo total valorizzato se trovato.
     """
     totals = Totals()
+    # total: prima prova "TOTALE...", poi fallback su "Moneta altro"
     m = TOTAL_RE.search(text)
     if m:
         totals.total = _to_float_eur(m.group(1))
+    else:
+        m2 = MONETA_RE.search(text)
+        if m2:
+            totals.total = _to_float_eur(m2.group(1))
+
+    # vat_total: 'DI CUI IVA 4,42'
+    m3 = DI_CUI_IVA_RE.search(text)
+    if m3:
+        totals.vat_total = _to_float_eur(m3.group(1))
     return totals
 
 
@@ -170,7 +280,7 @@ def parse_items(text: str) -> list[Item]:
     """
     Estrae righe prodotto/servizio dalla sezione DESCRIZIONE -> ARTICOLI quando presente.
     Supporta formato tipico: 'DESC 0,75 B' (prezzo + codice IVA).
-    Gestisce righe SCONTO come importi negativi.
+    Gestisce righe SCONTO come importi negativi e scarta falsi sconti (es. "su SCONTO 21,24").
     """
     items: list[Item] = []
     lines = _lines(text)
@@ -182,40 +292,73 @@ def parse_items(text: str) -> list[Item]:
 
     vat_code_map = _parse_vat_code_map(text)
 
-    price_end = re.compile(r"(.+?)\s+(-?\d+[\,\.]\d{2})$")              # legacy
-    price_iva_end = re.compile(r"(.+?)\s+(-?\d+[\,\.]\d{2})\s+([ABC])$") # nuovo
-    discount_re = re.compile(r"\bSCONTO\b", re.I)
+    # Regex robusta:
+    # - desc + prezzo (0,75 / 9.69) + IVA code opzionale anche attaccata (1,39A)
+    # - permette trailing junk dopo (OCR sporco)
+    item_re = re.compile(
+        r"^(?P<desc>.+?)\s+(?P<price>-?\d+[\,\.]\d{2})\s*(?P<iva>[A-Z])?\b.*$"
+    )
 
-    for l in item_lines:
-        m = price_iva_end.match(l)
-        iva_code = None
-        if m:
-            name_part = m.group(1).strip()
-            price = _to_float_eur(m.group(2))
-            iva_code = m.group(3).upper()
-        else:
-            m2 = price_end.match(l)
-            if not m2:
-                continue
-            name_part = m2.group(1).strip()
-            price = _to_float_eur(m2.group(2))
+    # Filtri anti-non-item
+    non_item_re = re.compile(
+        r"\b(TOTALE|TOT|IMPORTO|PAGATO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO|IVA)\b",
+        re.I,
+    )
 
-        if not name_part or price is None:
+    seen: set[tuple[str, float]] = set()
+
+    for raw in item_lines:
+        cl = _clean_item_line(raw)
+        if not cl:
             continue
 
-        # Heuristica sconti: se la riga contiene 'SCONTO' e il prezzo è positivo,
-        # in molti casi OCR ha perso il segno '-'.
-        if discount_re.search(name_part) and price > 0:
-            price = -price
+        m = item_re.match(cl)
+        if not m:
+            continue
 
+        desc = m.group("desc").strip()
+        price = _to_float_eur(m.group("price"))
+        iva_code = (m.group("iva") or "").upper() or None
+
+        if price is None or not desc or len(desc) < 3:
+            continue
+
+        # Scarta righe chiaramente non-articolo (prima della logica sconti)
+        if non_item_re.search(desc) and "SCONTO" not in desc.upper():
+            continue
+
+        # Normalizza descrizione una sola volta
+        norm_desc = _normalize_desc(desc)
+
+        # Sconti: scarta falsi sconti tipo "su SCONTO 21,24" (fusione/rumore OCR)
+        # Regola: se contiene "SCONTO" ma NON contiene "%" e NON contiene "-" e l'importo è grande -> scarta
+        if "SCONTO" in norm_desc:
+            has_minus = "-" in cl
+            has_percent = "%" in cl
+            if (not has_minus) and (not has_percent) and abs(price) > 5:
+                continue
+            if (not has_minus) and price > 0:
+                price = -price
+
+        # IVA code solo A/B/C
+        if iva_code and iva_code not in ("A", "B", "C"):
+            iva_code = None
         vat_rate = vat_code_map.get(iva_code) if iva_code else None
+
+        # Dedup soft (descrizione normalizzata + prezzo)
+        key = (norm_desc, round(float(price), 2))
+        if key in seen:
+            continue
+        seen.add(key)
+
+        cleaned = clean_item_name(desc)
+        cleaned = strip_leading_singleton(cleaned)
 
         items.append(
             Item(
-                raw_line=l,
-                name=name_part[:120],
+                raw_line=raw,
+                name=cleaned,
                 total_price=price,
-                # vat_rate: lasciato a None; mapping A/B/C a % si può fare in un commit successivo
                 vat_rate=vat_rate,
             )
         )
