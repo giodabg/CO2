@@ -59,6 +59,10 @@ def build_contract(
     tess_extra_config: str | None = None,
     enable_crop: bool = True,
     crop_margin: int = 8,
+    auto_rotate_landscape: bool = True,
+    normalize_illumination: bool = True,
+    illumination_ksize: int = 51,
+    upscale_min_dim: int | None = 1800,
 ) -> ReceiptContractV1:
     """
     @brief Costruisce il contratto ReceiptContractV1 a partire da una foto.
@@ -73,16 +77,23 @@ def build_contract(
     if img is None:
         raise FileNotFoundError(f"Impossibile leggere immagine: {image_path}")
 
-    pre, steps = preprocess_for_ocr(img, enable_crop=enable_crop, crop_margin=crop_margin)
+    pre, steps = preprocess_for_ocr(
+        img,
+        enable_crop=enable_crop,
+        crop_margin=crop_margin,
+        auto_rotate_landscape=auto_rotate_landscape,
+        normalize_illumination=normalize_illumination,
+        illumination_ksize=illumination_ksize,
+        upscale_min_dim=upscale_min_dim,
+    )
     ocr = run_tesseract(pre, lang=lang, psm=psm, extra_config=tess_extra_config)
     text = normalize_ocr_text(ocr.text)
 
-    receipt_info = parse_receipt_info(text)
     merchant = parse_merchant(text)
-
+    receipt_info = parse_receipt_info(text)
     items, items_format, items_score = parse_items_with_meta(text, merchant=merchant)
-
     totals = parse_totals(text)
+
     warnings = []
 
     declared = _extract_declared_items_count(text)
@@ -151,6 +162,28 @@ def main() -> None:
         default=8,
         help="Margine in pixel attorno al contorno principale (default: 8)",
     )
+    run.add_argument(
+        "--no-auto-rotate-landscape",
+        action="store_true",
+        help="Non ruotare automaticamente immagini orizzontali in verticale",
+    )
+    run.add_argument(
+        "--no-illumination-norm",
+        action="store_true",
+        help="Disabilita la normalizzazione per ombre lente",
+    )
+    run.add_argument(
+        "--illumination-ksize",
+        type=int,
+        default=51,
+        help="Kernel (dispari) per stimare il background nella normalizzazione ombre (default: 51)",
+    )
+    run.add_argument(
+        "--upscale-min-dim",
+        type=int,
+        default=1800,
+        help="Porta il lato lungo ad almeno questo valore (px) per scontrini piccoli (default: 1800). Usa 0 per disabilitare.",
+    )
 
     dump = sub.add_parser("dump-json", help="Esegue OCR+parsing e stampa il JSON (senza DB)")
     dump.add_argument("--image", required=True)
@@ -169,6 +202,28 @@ def main() -> None:
         default=8,
         help="Margine in pixel attorno al contorno principale (default: 8)",
     )
+    dump.add_argument(
+        "--no-auto-rotate-landscape",
+        action="store_true",
+        help="Non ruotare automaticamente immagini orizzontali in verticale",
+    )
+    dump.add_argument(
+        "--no-illumination-norm",
+        action="store_true",
+        help="Disabilita la normalizzazione per ombre lente",
+    )
+    dump.add_argument(
+        "--illumination-ksize",
+        type=int,
+        default=51,
+        help="Kernel (dispari) per stimare il background nella normalizzazione ombre (default: 51)",
+    )
+    dump.add_argument(
+        "--upscale-min-dim",
+        type=int,
+        default=1800,
+        help="Porta il lato lungo ad almeno questo valore (px) per scontrini piccoli (default: 1800). Usa 0 per disabilitare.",
+    )
 
     args = p.parse_args()
 
@@ -181,8 +236,12 @@ def main() -> None:
             tess_extra_config=args.tess_extra_config,
             enable_crop=not args.no_auto_crop,
             crop_margin=args.crop_margin,
+            auto_rotate_landscape=not args.no_auto_rotate_landscape,
+            normalize_illumination=not args.no_illumination_norm,
+            illumination_ksize=args.illumination_ksize,
+            upscale_min_dim=None if args.upscale_min_dim == 0 else args.upscale_min_dim,
         )
-
+        
     if args.cmd == "dump-json":
         print(contract.model_dump_json(indent=2, ensure_ascii=False))
         return
