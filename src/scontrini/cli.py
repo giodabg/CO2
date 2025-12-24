@@ -19,7 +19,7 @@ from scontrini.domain.models import OcrInfo, Quality, ReceiptContractV1, Source
 from scontrini.ocr.preprocess import preprocess_for_ocr
 from scontrini.ocr.engine import run_tesseract
 from scontrini.ocr.postprocess import normalize_ocr_text
-from scontrini.domain.parsing import parse_merchant, parse_receipt_info, parse_items, parse_totals
+from scontrini.domain.parsing import parse_items_with_meta, parse_merchant, parse_receipt_info, parse_items, parse_totals
 from scontrini.storage.db import connect
 from scontrini.storage.repository import insert_receipt
 
@@ -64,11 +64,12 @@ def build_contract(image_path: str, captured_at: str, lang: str) -> ReceiptContr
     ocr = run_tesseract(pre, lang=lang)
     text = normalize_ocr_text(ocr.text)
 
-    merchant = parse_merchant(text)
     receipt_info = parse_receipt_info(text)
-    items = parse_items(text)
-    totals = parse_totals(text)
+    merchant = parse_merchant(text)
 
+    items, items_format, items_score = parse_items_with_meta(text, merchant=merchant)
+
+    totals = parse_totals(text)
     warnings = []
 
     declared = _extract_declared_items_count(text)

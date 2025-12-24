@@ -50,8 +50,6 @@ VAT_CODE_RATE_AAIVA = re.compile(
     re.I,
 )
 
-import re
-
 _ALLOWED_NAME_RE = re.compile(r"[^A-Za-z0-9À-ÿ\s\.\,]", re.UNICODE)
 _MULTI_SPACE_RE = re.compile(r"\s+")
 
@@ -171,13 +169,118 @@ def _normalize_desc(desc: str) -> str:
     desc = re.sub(r"^(?:\-+|\.+)\s*", "", desc)
     return desc
 
+
+def get_items_parsers_registry():
+    """
+    Registry centralizzato dei parser items disponibili.
+    Aggiungi qui nuovi formati senza cambiare il dispatcher.
+    """
+    return {
+        "iperal": parse_items_iperal,
+        "md": parse_items_md,
+        "generic": _parse_items_dual_layout,  # o parse_items_generic se preferisci
+    }
+
+def _extract_declared_items_count(text: str) -> Optional[int]:
+    m = re.search(r"\bARTICOLI\s+(\d+)\b", text, re.I)
+    return int(m.group(1)) if m else None
+
+def _score_items_result(text: str, items: list[Item], totals: Optional[Totals] = None) -> float:
+    """
+    Score più alto = migliore.
+    Criteri:
+    - item count vicino a 'ARTICOLI N' (se presente) (escludendo sconti)
+    - delta tra somma item e totale (se totale disponibile) -> penalità
+    - penalità per righe chiaramente "non item" finite negli items
+    - reward per percentuale di items con prezzo plausibile
+    """
+    if totals is None:
+        totals = parse_totals(text)
+
+    declared = _extract_declared_items_count(text)
+
+    # Conteggio prodotti: escludi sconti dal conteggio articoli
+    products = [it for it in items if it.name and "SCONTO" not in _normalize_desc(it.name)]
+    n_products = len(products)
+
+    # Somma prezzi (include sconti: serve per coerenza col totale)
+    s = 0.0
+    priced = 0
+    for it in items:
+        if it.total_price is not None:
+            s += float(it.total_price)
+            priced += 1
+
+    # Percentuale righe con prezzo
+    price_ratio = (priced / max(len(items), 1))
+
+    score = 0.0
+
+    # Reward: più prezzi validi
+    score += 10.0 * price_ratio
+
+    # Reward: preferisci avere "abbastanza" righe (ma non esplodere)
+    score += min(len(items), 30) * 0.2
+
+    # Penalità: mismatch con ARTICOLI N
+    if declared is not None:
+        score -= abs(n_products - declared) * 2.5
+
+    # Penalità: incoerenza con totale
+    if totals.total is not None:
+        delta = abs(s - float(totals.total))
+        # penalità crescente: 0.1€ -> piccola, >2€ -> grande
+        score -= min(delta * 3.0, 50.0)
+
+    # Penalità: item sospetti che contengono parole "non item"
+    suspicious_re = re.compile(r"\b(PAGAMENTO|PAGATO|RESTO|TOTALE|SUBTOT|IMPORTO|DOC|DOCUMENTO)\b", re.I)
+    suspicious = 0
+    for it in items:
+        if it.name and suspicious_re.search(it.name):
+            suspicious += 1
+    score -= suspicious * 5.0
+
+    return score
+
+def _ordered_formats_for_try(merchant: Merchant) -> list[str]:
+    primary = detect_receipt_format(merchant)
+    registry = get_items_parsers_registry()
+
+    # Metti primary davanti, poi gli altri (senza duplicati)
+    ordered = []
+    if primary in registry:
+        ordered.append(primary)
+    for k in registry.keys():
+        if k not in ordered:
+            ordered.append(k)
+    return ordered
+
+
 def strip_leading_singleton(name: str) -> str:
     # rimuove un singolo token di 1 char se seguito da testo significativo
     return re.sub(r"^(?:[A-Za-z])\s+(?=\w{3,})", "", name).strip()
 
 
-SECTION_ITEMS_START_RE = re.compile(r"\bDESCRIZIONE\b", re.I)
-SECTION_ITEMS_END_RE = re.compile(r"\bARTICOLI\b", re.I)
+def detect_receipt_format(merchant: Merchant) -> str:
+    """
+    Determina il formato dello scontrino basandosi sul merchant estratto.
+    Ritorna: 'iperal', 'md', 'generic'
+    """
+    name = (merchant.name or "").upper()
+    addr = (merchant.address or "").upper()
+
+    # IPERAL
+    if "IPERAL" in name:
+        return "iperal"
+
+    # MD (come parola intera per ridurre falsi positivi)
+    if re.search(r"\bMD\b", name) or "MD SPA" in name or re.search(r"\bMD\b", addr):
+        return "md"
+
+    return "generic"
+
+
+
 
 def parse_merchant(text: str) -> Merchant:
     """
@@ -275,36 +378,28 @@ def parse_totals(text: str) -> Totals:
         totals.vat_total = _to_float_eur(m3.group(1))
     return totals
 
-
-def parse_items(text: str) -> list[Item]:
+def parse_items_iperal(text: str) -> list[Item]:
     """
-    Estrae righe prodotto/servizio dalla sezione DESCRIZIONE -> ARTICOLI quando presente.
-
-    Supporta due layout tipici:
-    - Layout A (es. IPERAL):  'DESC 0,75 B'  -> prezzo + codice IVA (A/B/C)
-    - Layout B (es. MD):     'DESC 4,00 0,99' -> IVA% + prezzo (due numeri)
-
-    Gestisce righe SCONTO come importi negativi e scarta falsi sconti tipo "su SCONTO 21,24".
-    Ripulisce il nome prodotto eliminando caratteri non plausibili (mantiene lettere/cifre/spazi/punti/virgole).
+    Parser specializzato per scontrini tipo IPERAL:
+    righe item del tipo: 'DESC 0,75 B' (prezzo + codice IVA A/B/C)
     """
     items: list[Item] = []
     lines = _lines(text)
 
-    # Preferisci la sezione articoli; fallback all'intero testo per compatibilità.
     item_lines = _slice_between(lines, SECTION_ITEMS_START_RE, SECTION_ITEMS_END_RE)
     if not item_lines:
         item_lines = lines
 
-    # Mappa A/B/C -> aliquota (se presente nel footer)
     vat_code_map = _parse_vat_code_map(text)
 
-    # Numeri tipo 0,99 / 25.55 / 10,00
-    num_re = re.compile(r"\d+[\,\.]\d{2}")
-    iva_code_re = re.compile(r"\b([ABC])\b", re.I)
+    # Prezzo + codice IVA A/B/C (anche con junk dopo)
+    iperal_re = re.compile(
+        r"^(?P<desc>.+?)\s+(?P<price>-?\d+[\,\.]\d{2})\s*(?P<code>[ABC])\b.*$",
+        re.I,
+    )
 
-    # Righe sicuramente NON-articolo
     non_item_re = re.compile(
-        r"\b(TOTALE|TOT|SUBTOT|SUBTOT\.?|IMPORTO|PAGATO|PAGAMENTO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO)\b",
+        r"\b(TOTALE|TOT|SUBTOT|SUBTOT\.?|IMPORTO|PAGATO|PAGAMENTO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO|IVA)\b",
         re.I,
     )
 
@@ -312,62 +407,26 @@ def parse_items(text: str) -> list[Item]:
 
     for raw in item_lines:
         cl = _clean_item_line(raw)
-        if not cl:
+        if not cl or non_item_re.search(cl):
             continue
 
-        # Scarta righe di totali/pagamenti ecc.
-        if non_item_re.search(cl):
+        m = iperal_re.match(cl)
+        if not m:
             continue
 
-        # Estrai tutti i numeri decimali presenti nella riga
-        nums = num_re.findall(cl)
-        if not nums:
+        desc_raw = m.group("desc").strip()
+        desc_clean = clean_item_name(desc_raw)
+        desc_clean = strip_leading_singleton(desc_clean)
+
+        price = _to_float_eur(m.group("price"))
+        code = m.group("code").upper()
+
+        if not desc_clean or price is None:
             continue
 
-        # Heuristica: descrizione = parte prima del primo numero
-        first_num_pos = None
-        m_first = num_re.search(cl)
-        if m_first:
-            first_num_pos = m_first.start()
-
-        desc = cl if first_num_pos is None else cl[:first_num_pos].strip()
-        if not desc or len(desc) < 3:
-            continue
-
-        # Clean nome prodotto (whitelist)
-        desc_clean = clean_item_name(desc)
-
-        # Se dopo pulizia è troppo corto, scarta
-        if not desc_clean or len(desc_clean) < 3:
-            continue
-
-        # Prezzo e IVA rate
-        price: Optional[float] = None
-        vat_rate: Optional[float] = None
-
-        # Layout B: due numeri -> primo = IVA%, ultimo = prezzo
-        if len(nums) >= 2:
-            vat_rate = _to_float_eur(nums[0])
-            price = _to_float_eur(nums[-1])
-        else:
-            # Layout A: un numero -> prezzo (codice IVA eventuale)
-            price = _to_float_eur(nums[0])
-
-        if price is None:
-            continue
-
-        # Codice IVA A/B/C (layout A). Se presente e mappabile, valorizza vat_rate.
-        m_code = iva_code_re.search(cl)
-        if m_code:
-            code = m_code.group(1).upper()
-            mapped = vat_code_map.get(code)
-            if mapped is not None:
-                vat_rate = mapped
-
-        # Normalizza per logica sconti e dedup
         norm_desc = _normalize_desc(desc_clean)
 
-        # Sconti: scarta falsi sconti tipo "su SCONTO 21,24"
+        # Sconti robusti (scarta falsi "SCONTO 21,24")
         if "SCONTO" in norm_desc:
             has_minus = "-" in cl
             has_percent = "%" in cl
@@ -376,7 +435,8 @@ def parse_items(text: str) -> list[Item]:
             if (not has_minus) and price > 0:
                 price = -price
 
-        # Dedup soft: descrizione normalizzata + prezzo
+        vat_rate = vat_code_map.get(code)
+
         key = (norm_desc, round(float(price), 2))
         if key in seen:
             continue
@@ -392,3 +452,251 @@ def parse_items(text: str) -> list[Item]:
         )
 
     return items
+
+def parse_items_md(text: str) -> list[Item]:
+    """
+    Parser specializzato per scontrini tipo MD:
+    righe item del tipo: 'DESC 4,00 0,99' (IVA% + prezzo)
+    """
+    items: list[Item] = []
+    lines = _lines(text)
+
+    item_lines = _slice_between(lines, SECTION_ITEMS_START_RE, SECTION_ITEMS_END_RE)
+    if not item_lines:
+        item_lines = lines
+
+    num_re = re.compile(r"\d+[\,\.]\d{2}")
+
+    non_item_re = re.compile(
+        r"\b(TOTALE|TOT|SUBTOT|SUBTOT\.?|IMPORTO|PAGATO|PAGAMENTO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO)\b",
+        re.I,
+    )
+
+    seen: set[tuple[str, float]] = set()
+
+    for raw in item_lines:
+        cl = _clean_item_line(raw)
+        if not cl or non_item_re.search(cl):
+            continue
+
+        nums = num_re.findall(cl)
+        if len(nums) < 2:
+            # Layout MD richiede IVA% e prezzo
+            continue
+
+        # Descrizione = parte prima del primo numero
+        m_first = num_re.search(cl)
+        desc_raw = cl[: m_first.start()].strip() if m_first else cl.strip()
+        if not desc_raw or len(desc_raw) < 3:
+            continue
+
+        desc_clean = clean_item_name(desc_raw)
+        desc_clean = strip_leading_singleton(desc_clean)
+
+        vat_rate = _to_float_eur(nums[0])
+        price = _to_float_eur(nums[-1])
+
+        if not desc_clean or price is None:
+            continue
+
+        norm_desc = _normalize_desc(desc_clean)
+
+        # Sconti robusti
+        if "SCONTO" in norm_desc:
+            has_minus = "-" in cl
+            has_percent = "%" in cl
+            if (not has_minus) and (not has_percent) and abs(price) > 5:
+                continue
+            if (not has_minus) and price > 0:
+                price = -price
+
+        key = (norm_desc, round(float(price), 2))
+        if key in seen:
+            continue
+        seen.add(key)
+
+        items.append(
+            Item(
+                raw_line=raw,
+                name=desc_clean[:120],
+                total_price=price,
+                vat_rate=vat_rate,  # su MD è IVA% numerica
+            )
+        )
+
+    return items
+
+
+def _parse_items_dual_layout(text: str) -> list[Item]:
+    """
+    Parser generico (fallback): supporta sia layout A (prezzo + A/B/C) sia layout B (IVA% + prezzo).
+    È la precedente implementazione di parse_items.
+    """
+    items: list[Item] = []
+    lines = _lines(text)
+
+    item_lines = _slice_between(lines, SECTION_ITEMS_START_RE, SECTION_ITEMS_END_RE)
+    if not item_lines:
+        item_lines = lines
+
+    vat_code_map = _parse_vat_code_map(text)
+
+    num_re = re.compile(r"\d+[\,\.]\d{2}")
+    iva_code_re = re.compile(r"\b([ABC])\b", re.I)
+
+    non_item_re = re.compile(
+        r"\b(TOTALE|TOT|SUBTOT|SUBTOT\.?|IMPORTO|PAGATO|PAGAMENTO|RESTO|MONETA|ARTICOLI|DOC\.?|DOCUMENTO)\b",
+        re.I,
+    )
+
+    seen: set[tuple[str, float]] = set()
+
+    for raw in item_lines:
+        cl = _clean_item_line(raw)
+        if not cl:
+            continue
+
+        if non_item_re.search(cl):
+            continue
+
+        nums = num_re.findall(cl)
+        if not nums:
+            continue
+
+        m_first = num_re.search(cl)
+        first_num_pos = m_first.start() if m_first else None
+
+        desc = cl if first_num_pos is None else cl[:first_num_pos].strip()
+        if not desc or len(desc) < 3:
+            continue
+
+        desc_clean = clean_item_name(desc)
+        desc_clean = strip_leading_singleton(desc_clean)
+
+        if not desc_clean or len(desc_clean) < 3:
+            continue
+
+        price: Optional[float] = None
+        vat_rate: Optional[float] = None
+
+        if len(nums) >= 2:
+            vat_rate = _to_float_eur(nums[0])
+            price = _to_float_eur(nums[-1])
+        else:
+            price = _to_float_eur(nums[0])
+
+        if price is None:
+            continue
+
+        m_code = iva_code_re.search(cl)
+        if m_code:
+            code = m_code.group(1).upper()
+            mapped = vat_code_map.get(code)
+            if mapped is not None:
+                vat_rate = mapped
+
+        norm_desc = _normalize_desc(desc_clean)
+
+        if "SCONTO" in norm_desc:
+            has_minus = "-" in cl
+            has_percent = "%" in cl
+            if (not has_minus) and (not has_percent) and abs(price) > 5:
+                continue
+            if (not has_minus) and price > 0:
+                price = -price
+
+        key = (norm_desc, round(float(price), 2))
+        if key in seen:
+            continue
+        seen.add(key)
+
+        items.append(
+            Item(
+                raw_line=raw,
+                name=desc_clean[:120],
+                total_price=price,
+                vat_rate=vat_rate,
+            )
+        )
+
+    return items
+
+def parse_items_with_meta(
+    text: str,
+    merchant: Optional[Merchant] = None,
+) -> tuple[list[Item], str, float]:
+    """
+    Ritorna:
+    - items estratti
+    - formato selezionato ('iperal', 'md', 'generic', ...)
+    - score di qualità
+    """
+    if merchant is None:
+        merchant = parse_merchant(text)
+
+    registry = get_items_parsers_registry()
+    totals = parse_totals(text)
+
+    best_items: list[Item] = []
+    best_fmt: str = "unknown"
+    best_score: float = float("-inf")
+
+    for fmt in _ordered_formats_for_try(merchant):
+        parser_fn = registry.get(fmt)
+        if not parser_fn:
+            continue
+        try:
+            candidate = parser_fn(text)
+        except Exception:
+            continue
+
+        score = _score_items_result(text, candidate, totals=totals)
+
+        if score > best_score:
+            best_items = candidate
+            best_fmt = fmt
+            best_score = score
+
+    return best_items, best_fmt, best_score
+
+
+def parse_items(text: str, merchant: Optional[Merchant] = None) -> list[Item]:
+    """
+    Dispatcher robusto:
+    - determina un formato primario via merchant
+    - prova più parser (primario + fallback)
+    - sceglie il risultato con score migliore (coerenza totale, ARTICOLI, ecc.)
+    - permette di aggiungere formati registrandoli nel registry
+    """
+    if merchant is None:
+        merchant = parse_merchant(text)
+
+    registry = get_items_parsers_registry()
+    totals = parse_totals(text)
+
+    best_items: list[Item] = []
+    best_fmt: Optional[str] = None
+    best_score: float = float("-inf")
+
+    for fmt in _ordered_formats_for_try(merchant):
+        parser_fn = registry.get(fmt)
+        if parser_fn is None:
+            continue
+
+        try:
+            candidate = parser_fn(text)
+        except Exception:
+            # Se un parser fallisce, non bloccare tutto
+            continue
+
+        score = _score_items_result(text, candidate, totals=totals)
+
+        if score > best_score:
+            best_score = score
+            best_items = candidate
+            best_fmt = fmt
+
+    # Opzionale: se nessun parser produce risultati, fallback vuoto
+    return best_items
+
+
