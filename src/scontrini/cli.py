@@ -7,6 +7,10 @@
 Comandi:
 - dump-json: stampa contratto JSON senza DB
 - run: salva su SQLite e stampa receipt_id
+
+Opzioni rilevanti per tuning OCR:
+- --psm / --tess-extra-config per regolare Tesseract
+- --no-auto-crop / --crop-margin per attivare o regolare il crop perimetrale
 """
 
 from __future__ import annotations
@@ -46,7 +50,16 @@ def _extract_paid_amount(text: str):
     except Exception:
         return None
 
-def build_contract(image_path: str, captured_at: str, lang: str) -> ReceiptContractV1:
+def build_contract(
+    image_path: str,
+    captured_at: str,
+    lang: str,
+    *,
+    psm: int = 6,
+    tess_extra_config: str | None = None,
+    enable_crop: bool = True,
+    crop_margin: int = 8,
+) -> ReceiptContractV1:
     """
     @brief Costruisce il contratto ReceiptContractV1 a partire da una foto.
     @param image_path Path immagine (jpg/png).
@@ -60,8 +73,8 @@ def build_contract(image_path: str, captured_at: str, lang: str) -> ReceiptContr
     if img is None:
         raise FileNotFoundError(f"Impossibile leggere immagine: {image_path}")
 
-    pre, steps = preprocess_for_ocr(img)
-    ocr = run_tesseract(pre, lang=lang)
+    pre, steps = preprocess_for_ocr(img, enable_crop=enable_crop, crop_margin=crop_margin)
+    ocr = run_tesseract(pre, lang=lang, psm=psm, extra_config=tess_extra_config)
     text = normalize_ocr_text(ocr.text)
 
     receipt_info = parse_receipt_info(text)
@@ -125,16 +138,50 @@ def main() -> None:
     run.add_argument("--captured-at", required=True, help="ISO string, es. 2025-12-23T10:20:00+01:00")
     run.add_argument("--db", default="data/scontrini.sqlite")
     run.add_argument("--lang", default="ita")
+    run.add_argument("--psm", type=int, default=6, help="Tesseract PSM (default: 6)")
+    run.add_argument("--tess-extra-config", default=None, help="Extra config string for Tesseract")
+    run.add_argument(
+        "--no-auto-crop",
+        action="store_true",
+        help="Disabilita il crop automatico perimetrale dello scontrino",
+    )
+    run.add_argument(
+        "--crop-margin",
+        type=int,
+        default=8,
+        help="Margine in pixel attorno al contorno principale (default: 8)",
+    )
 
     dump = sub.add_parser("dump-json", help="Esegue OCR+parsing e stampa il JSON (senza DB)")
     dump.add_argument("--image", required=True)
     dump.add_argument("--captured-at", required=True)
     dump.add_argument("--lang", default="ita")
+    dump.add_argument("--psm", type=int, default=6, help="Tesseract PSM (default: 6)")
+    dump.add_argument("--tess-extra-config", default=None, help="Extra config string for Tesseract")
+    dump.add_argument(
+        "--no-auto-crop",
+        action="store_true",
+        help="Disabilita il crop automatico perimetrale dello scontrino",
+    )
+    dump.add_argument(
+        "--crop-margin",
+        type=int,
+        default=8,
+        help="Margine in pixel attorno al contorno principale (default: 8)",
+    )
 
     args = p.parse_args()
 
     if args.cmd in ("run", "dump-json"):
-        contract = build_contract(args.image, args.captured_at, args.lang)
+        contract = build_contract(
+            args.image,
+            args.captured_at,
+            args.lang,
+            psm=args.psm,
+            tess_extra_config=args.tess_extra_config,
+            enable_crop=not args.no_auto_crop,
+            crop_margin=args.crop_margin,
+        )
 
     if args.cmd == "dump-json":
         print(contract.model_dump_json(indent=2, ensure_ascii=False))

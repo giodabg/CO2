@@ -27,11 +27,18 @@ class OcrResult:
     confidence: float | None
 
 
-def run_tesseract(image_bin: np.ndarray, lang: str = "ita") -> OcrResult:
+def run_tesseract(
+    image_bin: np.ndarray,
+    lang: str = "ita",
+    psm: int = 6,
+    extra_config: str | None = None,
+) -> OcrResult:
     """
     @brief Esegue OCR Tesseract su immagine binarizzata.
     @param image_bin Immagine binaria (tipicamente output di preprocess_for_ocr).
     @param lang Codice lingua Tesseract (es. "ita", "eng").
+    @param psm Page Segmentation Mode da passare a Tesseract (default 6, singola colonna).
+    @param extra_config Configurazione aggiuntiva Tesseract (stringa, opzionale).
     @return OcrResult con testo e confidenza (se disponibile).
 
     @note
@@ -39,6 +46,13 @@ def run_tesseract(image_bin: np.ndarray, lang: str = "ita") -> OcrResult:
     - La confidenza non è sempre affidabile senza image_to_data; qui è None.
     @see preprocess_for_ocr
     """
-    config = "--oem 1 --psm 6"
+    base_config = (
+        f"--oem 1 --psm {psm} "
+        "-c textord_heavy_nr=1 "
+        "-c edges_max_children=1 "
+        "-c preserve_interword_spaces=0"
+    )
+    config = f"{base_config} {extra_config}" if extra_config else base_config
+
     text = pytesseract.image_to_string(image_bin, lang=lang, config=config)
     return OcrResult(text=text, confidence=None)
